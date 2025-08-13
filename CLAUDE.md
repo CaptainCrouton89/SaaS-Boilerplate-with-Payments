@@ -4,177 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- `pnpm dev` - Starts both frontend (Vite) and backend (Convex) development servers in parallel
-- `pnpm run dev:frontend` - Starts only the Vite frontend development server with auto-open
-- `pnpm run dev:backend` - Starts only the Convex backend development server
-- `pnpm run dev:stripe` - Starts Stripe CLI webhook listener (forwards to .convex.site domain)
-- `pnpm run build` - Builds the frontend application for production
-- `pnpm run lint` - Runs comprehensive linting: TypeScript checks for convex/, TypeScript checks for frontend, Convex dev once, and production build
+### Core Development
+
+- `npm run dev`: Start all development servers (frontend, Convex backend, and Stripe webhook listener)
+- `npm run dev:frontend`: Start Vite frontend only (opens browser automatically)
+- `npm run dev:backend`: Start Convex backend only
+- `npm run dev:stripe`: Start Stripe CLI webhook listener (forwards to acoustic-mule-30.convex.site)
+
+### Build and Quality
+
+- `npm run build`: Build frontend for production
+- `npm run lint`: Run complete linting pipeline (TypeScript checks for convex + frontend, Convex validation, Vite build)
+
+Note: The lint command is comprehensive and includes TypeScript compilation checks, Convex schema validation, and production build verification. Always run this before committing changes.
 
 ## Architecture Overview
 
-This is a **SaaS Boilerplate with Payments** built using:
+### Backend (Convex)
 
-### Core Stack
+- **Database Schema** (`convex/schema.ts`): Uses Convex's type-safe schema with tables for users (via auth), subscriptions, payments, and products
+- **Authentication** (`convex/auth.ts`, `convex/auth.config.ts`): Convex Auth with anonymous authentication enabled
+- **HTTP Routes** (`convex/router.ts`): Custom HTTP endpoints including Stripe webhook handler at `/stripe/webhook`
+- **Payment Processing** (`convex/payments.ts`, `convex/subscriptions.ts`): Stripe integration for subscription and payment management
+- **Products** (`convex/products.ts`): Product catalog management with Stripe price/product sync
 
-- **Frontend**: React 19 + TypeScript + Vite + TailwindCSS
-- **Backend**: Convex (full-stack TypeScript platform)
-- **Authentication**: Convex Auth with Password and Anonymous providers
-- **Payments**: Stripe integration with subscriptions and one-time payments
-- **UI**: Radix UI components with custom styling
+### Frontend (React + Vite)
 
-### Project Structure
+- **Routing Structure**: Dual layout system with marketing routes (unauthenticated) and app routes (authenticated)
+  - Marketing Layout: Landing, About, Contact, Pricing, Login, Signup pages
+  - Authenticated Layout: Dashboard, Profile pages with navigation
+- **State Management**: Uses Convex React hooks for real-time data synchronization
+- **UI Components**: Radix UI primitives with Tailwind CSS styling in `src/components/ui/`
+- **Authentication Flow**: Automatic route protection and redirects based on auth state
 
-- **Frontend code**: `src/` directory (React components, utilities)
-- **Backend code**: `convex/` directory (queries, mutations, actions, schema)
-- **Generated types**: `convex/_generated/` (auto-generated API types)
+### Key Integrations
 
-### Key Backend Files
+- **Stripe**: Full webhook handling for subscription lifecycle, payment processing, and product management
+- **Convex Deployment**: Connected to `acoustic-mule-30` deployment
+- **Tailwind CSS**: v4 with Vite plugin integration for styling
 
-- `convex/schema.ts` - Database schema with auth tables and payment tables
-- `convex/auth.ts` - Authentication configuration and user queries
-- `convex/payments.ts` - Payment processing and Stripe integration
-- `convex/subscriptions.ts` - Subscription management
-- `convex/products.ts` - Product/pricing definitions
-- `convex/http.ts` - HTTP routes and webhooks
-- `convex/router.ts` - User-defined HTTP routes (separate from auth routes)
+### Project Structure Patterns
 
-### Key Frontend Components
+- `convex/`: All backend logic, mutations, queries, and HTTP actions
+- `src/pages/`: Page components organized by functionality
+- `src/layouts/`: Layout wrappers for different app sections
+- `src/components/`: Reusable UI components with shadcn/ui patterns
+- `src/hooks/`: Custom React hooks (e.g., authentication error handling)
 
-- `src/App.tsx` - Main application with authenticated/unauthenticated states
-- `src/components/Dashboard.tsx` - User dashboard with subscription management
-- `src/components/PricingSection.tsx` - Pricing display and purchase flows
-- `src/components/SubscriptionCard.tsx` - Current subscription status
-- `src/components/PaymentHistory.tsx` - Payment history display
+### Environment Variables Required
 
-### Database Schema
+- `STRIPE_SECRET_KEY`: Stripe API secret key
+- `STRIPE_WEBHOOK_SECRET`: Stripe webhook endpoint secret
+- `CONVEX_SITE_URL`: Convex deployment URL (for auth configuration)
 
-The application uses Convex's schema system with these main tables:
+### Development Notes
 
-- **Auth tables** (from @convex-dev/auth): users, sessions, accounts, etc.
-- **subscriptions**: User subscription data with Stripe integration
-- **payments**: Payment history and transaction records
-- **products**: Available products/plans with Stripe price IDs
-
-### Authentication Flow
-
-- Uses Convex Auth with Password and Anonymous providers
-- Authentication state managed through Convex queries
-- User sessions persist across browser refreshes
-- Supports both email/password and anonymous sign-in
-
-### Payment Integration
-
-- Stripe Checkout for subscription and one-time payments
-- Stripe Customer Portal for subscription management
-- Webhook handling for payment status updates
-- Support for multiple subscription tiers and one-time purchases
-
-### Stripe Webhook Setup
-
-**CRITICAL**: Convex has two different domains for different purposes:
-
-- `.convex.cloud` - For query/mutation API calls via `/api/query`
-- `.convex.site` - For HTTP actions defined in `convex/http.ts` and `convex/router.ts`
-
-#### Webhook Configuration
-
-The Stripe webhook endpoint must use the `.convex.site` domain:
-
-```bash
-# Correct webhook URL format
-https://YOUR-DEPLOYMENT-NAME.convex.site/stripe/webhook
-```
-
-#### Development Setup
-
-1. **Start the Stripe CLI listener** (requires correct domain):
-
-   ```bash
-   pnpm run dev:stripe
-   # This runs: stripe listen --forward-to https://acoustic-mule-30.convex.site/stripe/webhook
-   ```
-
-2. **Required Environment Variables**:
-
-   ```bash
-   STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe CLI output
-   STRIPE_SECRET_KEY=sk_test_... # From Stripe Dashboard
-   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_... # From Stripe Dashboard (frontend)
-   ```
-
-3. **Test the webhook endpoint**:
-   ```bash
-   curl -X GET https://YOUR-DEPLOYMENT-NAME.convex.site/test
-   ```
-
-#### Webhook Handler Implementation
-
-The webhook handler in `convex/router.ts` includes:
-
-- **Stripe Signature Verification**: Uses `stripe.webhooks.constructEvent()` with the webhook secret
-- **Event Handling**: Processes `checkout.session.completed`, subscription events, and `payment_intent.succeeded`
-- **Updated Stripe API**: Uses current API property access patterns:
-  - `subscription.items.data[0].current_period_start` (new format)
-  - `subscription.items.data[0].current_period_end` (new format)
-- **Error Handling**: Comprehensive error catching and logging
-- **Database Updates**: Automatically updates subscription and payment records
-
-#### Common Issues and Troubleshooting
-
-1. **Wrong Domain Error**: If webhooks fail, verify you're using `.convex.site` not `.convex.cloud`
-2. **Signature Verification Failures**: Ensure `STRIPE_WEBHOOK_SECRET` matches the CLI output
-3. **Event Not Found**: Check that the webhook endpoint is accessible via curl test
-4. **Database Updates Failing**: Verify user authentication and proper error handling in webhook functions
-
-#### Webhook Events Handled
-
-- `checkout.session.completed` - Creates/updates subscription and payment records
-- `customer.subscription.updated` - Updates subscription status and billing cycle
-- `customer.subscription.deleted` - Handles subscription cancellations
-- `payment_intent.succeeded` - Records successful one-time payments
-
-### Development Patterns
-
-- **Convex Functions**: Follow new function syntax with explicit args/returns validators
-- **Type Safety**: Strict TypeScript with generated types from Convex schema
-- **Real-time Updates**: Convex queries automatically re-run when data changes
-- **Error Handling**: Throw errors early with descriptive messages
-- **Authentication**: All protected operations check user authentication via `getAuthUserId()`
-
-### Environment Variables
-
-The application requires several environment variables for Stripe integration:
-
-- `STRIPE_SECRET_KEY` - Stripe secret key for backend operations
-- `STRIPE_PUBLISHABLE_KEY` - Stripe publishable key for frontend
-- `STRIPE_WEBHOOK_SECRET` - Webhook endpoint secret from Stripe CLI (for development)
-- `SITE_URL` - Base URL for redirect URLs
-- `STRIPE_SUCCESS_URL` - Post-payment success URL
-- `STRIPE_CANCEL_URL` - Payment cancellation URL
-- `STRIPE_PORTAL_RETURN_URL` - Customer portal return URL
-
-### Convex Guidelines
-
-This project follows strict Convex development patterns as defined in `.cursor/rules/convex_rules.mdc`:
-
-- Always use new function syntax with args/returns validators
-- Use proper function references (`api.` and `internal.`)
-- Define comprehensive database schemas with appropriate indexes
-- Use proper validators (`v.string()`, `v.id()`, etc.) for all function arguments
-- Follow authentication patterns with `getAuthUserId()`
-- Implement proper error handling in all functions
-
-### UI/UX Patterns
-
-- Responsive design with mobile-first approach
-- Loading states for async operations
-- Toast notifications for user feedback
-- Authenticated/unauthenticated content switching
-- Dashboard-style layout for logged-in users
-- Landing page with pricing for anonymous users
-
-This boilerplate provides a complete foundation for building SaaS applications with user authentication, subscription billing, and payment processing.
+- Uses TypeScript throughout with strict type checking
+- Convex provides real-time data synchronization and type-safe APIs
+- Stripe CLI integration for local webhook testing during development
+- Authentication redirects prevent logged-in users from seeing marketing pages
 
 ### Docs
 
