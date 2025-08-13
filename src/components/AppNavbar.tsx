@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { SignOutButton } from "../SignOutButton";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { User, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 export function AppNavbar() {
   const location = useLocation();
   const user = useQuery(api.auth.loggedInUser);
+  const { signOut } = useAuthActions();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -44,14 +46,6 @@ export function AppNavbar() {
             >
               Dashboard
             </Link>
-            <Link 
-              to="/profile" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive('/profile') ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              Profile
-            </Link>
           </nav>
 
           {/* User Menu */}
@@ -77,28 +71,16 @@ export function AppNavbar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard" className="w-full cursor-pointer">
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/profile?tab=billing" className="w-full cursor-pointer">
-                    Billing & Subscriptions
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full cursor-pointer">
-                    Profile Settings
+                  <Link to="/profile" className="w-full cursor-pointer flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Profile
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <div className="w-full">
-                    <SignOutButton />
-                  </div>
+                <DropdownMenuItem onClick={() => void signOut()} className="cursor-pointer flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
