@@ -89,12 +89,14 @@ https://YOUR-DEPLOYMENT-NAME.convex.site/stripe/webhook
 #### Development Setup
 
 1. **Start the Stripe CLI listener** (requires correct domain):
+
    ```bash
    pnpm run dev:stripe
    # This runs: stripe listen --forward-to https://acoustic-mule-30.convex.site/stripe/webhook
    ```
 
 2. **Required Environment Variables**:
+
    ```bash
    STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe CLI output
    STRIPE_SECRET_KEY=sk_test_... # From Stripe Dashboard
@@ -176,4 +178,5 @@ This boilerplate provides a complete foundation for building SaaS applications w
 
 ### Docs
 
-- Stripe CLI Reference `https://docs.stripe.com/cli/resources`
+- Stripe CLI Reference `https://docs.stripe.com/cli/resources.md`
+- Testing Convex `docs/internal/convex/http-actions-testing.md`
