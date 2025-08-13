@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { AuthenticationError } from "./utils/errors";
 
 export const getUserSubscription = query({
   args: {},
@@ -32,7 +33,7 @@ export const createSubscription = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("User not authenticated");
+      throw new AuthenticationError();
     }
 
     // Check if subscription already exists
@@ -97,7 +98,7 @@ export const cancelSubscription = mutation({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("User not authenticated");
+      throw new AuthenticationError();
     }
 
     const subscription = await ctx.db

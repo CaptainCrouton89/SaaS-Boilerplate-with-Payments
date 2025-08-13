@@ -1,31 +1,58 @@
+import { useAction, useQuery } from "convex/react";
 import { useState } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
+import { PaymentHistory } from "../components/PaymentHistory";
+import { PricingSection } from "../components/PricingSection";
+import { SubscriptionCard } from "../components/SubscriptionCard";
 import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Separator } from "../components/ui/separator";
-import { SubscriptionCard } from "../components/SubscriptionCard";
-import { PaymentHistory } from "../components/PaymentHistory";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import { useAuthErrorHandler } from "../hooks/useAuthErrorHandler";
 
 export function ProfilePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useQuery(api.auth.loggedInUser);
   const subscription = useQuery(api.subscriptions.getUserSubscription);
   const payments = useQuery(api.payments.getUserPayments);
   const createPortalSession = useAction(api.payments.createPortalSession);
+  const { handleAuthError } = useAuthErrorHandler();
+
+  const currentTab = searchParams.get("tab") || "profile";
 
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
-    email: user?.email || ""
+    email: user?.email || "",
   });
 
+  const handleTabChange = (value: string) => {
+    if (value === "profile") {
+      searchParams.delete("tab");
+    } else {
+      searchParams.set("tab", value);
+    }
+    setSearchParams(searchParams);
+  };
+
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfileData(prev => ({
+    setProfileData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -38,7 +65,9 @@ export function ProfilePage() {
       const { url } = await createPortalSession();
       window.open(url, "_blank");
     } catch (error) {
-      toast.error("Failed to open billing portal");
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to open billing portal");
+      }
     }
   };
 
@@ -53,13 +82,19 @@ export function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-4xl font-bold text-primary mb-2">Profile Settings</h1>
+        <h1 className="text-4xl font-bold text-primary mb-2">
+          Profile Settings
+        </h1>
         <p className="text-muted-foreground">
           Manage your account settings and billing information
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-8">
+      <Tabs
+        value={currentTab}
+        onValueChange={handleTabChange}
+        className="space-y-8"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -103,9 +138,9 @@ export function ProfilePage() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex justify-end">
-                <Button onClick={handleProfileSave}>
+                <Button onClick={() => void handleProfileSave()}>
                   Save Changes
                 </Button>
               </div>
@@ -144,9 +179,13 @@ export function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Subscription Status</p>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      subscription ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        subscription
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {subscription ? "Subscribed" : "Free"}
                     </span>
                   </div>
@@ -157,32 +196,50 @@ export function ProfilePage() {
         </TabsContent>
 
         {/* Billing Tab */}
-        <TabsContent value="billing" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <SubscriptionCard subscription={subscription || null} />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Billing Portal</CardTitle>
-                  <CardDescription>
-                    Manage your subscription, payment methods, and download invoices.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleManageBilling} className="w-full">
-                    Open Billing Portal
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2">
-                    You'll be redirected to Stripe's secure portal to manage your billing.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+        <TabsContent value="billing" className="space-y-8">
+          {/* Current Subscription */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <SubscriptionCard subscription={subscription || null} />
             
-            <div>
-              <PaymentHistory payments={payments || []} />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Billing Portal</CardTitle>
+                <CardDescription>
+                  Manage your subscription, payment methods, and download
+                  invoices.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => void handleManageBilling()}
+                  className="w-full"
+                >
+                  Open Billing Portal
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  You'll be redirected to Stripe's secure portal to manage
+                  your billing.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Upgrade Section (only show if no subscription) */}
+          {!subscription && (
+            <>
+              <Separator />
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Choose a Plan</h2>
+                <PricingSection />
+              </div>
+            </>
+          )}
+
+          {/* Payment History */}
+          <Separator />
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Payment History</h2>
+            <PaymentHistory payments={payments || []} />
           </div>
         </TabsContent>
 
@@ -216,16 +273,16 @@ export function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Label htmlFor="confirm-password">
+                      Confirm New Password
+                    </Label>
                     <Input
                       id="confirm-password"
                       type="password"
                       placeholder="Confirm your new password"
                     />
                   </div>
-                  <Button>
-                    Update Password
-                  </Button>
+                  <Button>Update Password</Button>
                 </div>
               </div>
 
@@ -249,10 +306,14 @@ export function ProfilePage() {
                   <div>
                     <h4 className="font-medium text-red-800">Delete Account</h4>
                     <p className="text-sm text-red-600 mt-1">
-                      Permanently delete your account and all associated data. This action cannot be undone.
+                      Permanently delete your account and all associated data.
+                      This action cannot be undone.
                     </p>
                   </div>
-                  <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-700 hover:bg-red-100"
+                  >
                     Delete Account
                   </Button>
                 </div>

@@ -2,6 +2,7 @@ import { useAction, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
+import { useAuthErrorHandler } from "../hooks/useAuthErrorHandler";
 
 interface Subscription {
   _id: string;
@@ -18,6 +19,7 @@ interface SubscriptionCardProps {
 export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   const cancelSubscription = useMutation(api.subscriptions.cancelSubscription);
   const createPortalSession = useAction(api.payments.createPortalSession);
+  const { handleAuthError } = useAuthErrorHandler();
 
   const handleCancel = async () => {
     try {
@@ -26,7 +28,9 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         "Subscription will be canceled at the end of the billing period"
       );
     } catch (error) {
-      toast.error("Failed to cancel subscription");
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to cancel subscription");
+      }
     }
   };
 
@@ -35,7 +39,9 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
       const { url } = await createPortalSession();
       window.open(url, "_blank");
     } catch (error) {
-      toast.error("Failed to open billing portal");
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to open billing portal");
+      }
     }
   };
 

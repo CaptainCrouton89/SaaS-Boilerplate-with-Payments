@@ -20,6 +20,7 @@ import type * as products from "../products.js";
 import type * as router from "../router.js";
 import type * as sampleData from "../sampleData.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as utils_errors from "../utils/errors.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   router: typeof router;
   sampleData: typeof sampleData;
   subscriptions: typeof subscriptions;
+  "utils/errors": typeof utils_errors;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

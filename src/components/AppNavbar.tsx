@@ -85,6 +85,11 @@ export function AppNavbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/profile?tab=billing" className="w-full cursor-pointer">
+                    Billing & Subscriptions
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/profile" className="w-full cursor-pointer">
                     Profile Settings
                   </Link>

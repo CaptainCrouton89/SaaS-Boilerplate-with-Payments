@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import Stripe from "stripe";
 import { api } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
+import { AuthenticationError } from "./utils/errors";
 
 export const getUserPayments = query({
   args: {},
@@ -32,7 +33,7 @@ export const createPayment = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("User not authenticated");
+      throw new AuthenticationError();
     }
 
     return await ctx.db.insert("payments", {
@@ -55,7 +56,7 @@ export const createCheckoutSession = action({
   handler: async (ctx, args) => {
     const user = await ctx.runQuery(api.auth.loggedInUser);
     if (!user) {
-      throw new Error("User not authenticated");
+      throw new AuthenticationError();
     }
 
     const { default: Stripe } = await import("stripe");
@@ -65,7 +66,7 @@ export const createCheckoutSession = action({
     });
 
     const successUrl =
-      process.env.STRIPE_SUCCESS_URL || `${process.env.SITE_URL}/dashboard`;
+      process.env.STRIPE_SUCCESS_URL || `${process.env.SITE_URL}/billing`;
     const cancelUrl =
       process.env.STRIPE_CANCEL_URL || `${process.env.SITE_URL}/pricing`;
 
@@ -120,7 +121,7 @@ export const createPortalSession = action({
   handler: async (ctx): Promise<{ url: string }> => {
     const user = await ctx.runQuery(api.auth.loggedInUser);
     if (!user) {
-      throw new Error("User not authenticated");
+      throw new AuthenticationError();
     }
 
     const subscription = await ctx.runQuery(

@@ -2,11 +2,13 @@ import { useAction, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
+import { useAuthErrorHandler } from "../hooks/useAuthErrorHandler";
 
 export function PricingSection() {
   const subscriptionPlans = useQuery(api.products.getSubscriptionPlans);
   const oneTimeProducts = useQuery(api.products.getOneTimeProducts);
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
+  const { handleAuthError } = useAuthErrorHandler();
 
   const handleSubscribe = async (priceId: string) => {
     try {
@@ -16,7 +18,9 @@ export function PricingSection() {
       });
       window.open(url, "_blank");
     } catch (error) {
-      toast.error("Failed to create checkout session");
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to create checkout session");
+      }
     }
   };
 
@@ -28,7 +32,9 @@ export function PricingSection() {
       });
       window.open(url, "_blank");
     } catch (error) {
-      toast.error("Failed to create checkout session");
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to create checkout session");
+      }
     }
   };
 
