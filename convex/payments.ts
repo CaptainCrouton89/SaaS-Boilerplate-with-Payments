@@ -52,36 +52,97 @@ export const createCheckoutSession = action({
     type: v.union(v.literal("subscription"), v.literal("one_time")),
   },
   handler: async (ctx, args) => {
-    const userId = await ctx.runQuery(api.auth.loggedInUser);
-    if (!userId) {
+    const user = await ctx.runQuery(api.auth.loggedInUser);
+    if (!user) {
       throw new Error("User not authenticated");
     }
 
-    // This would integrate with Stripe in a real implementation
-    // For now, return a mock checkout URL
-    return {
-      url: `https://checkout.stripe.com/pay/mock-session-${args.priceId}`,
-      sessionId: `cs_mock_${Date.now()}`,
-    };
+    const { default: Stripe } = await import('stripe');
+    
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2024-12-18.acacia',
+    });
+
+    const successUrl = process.env.STRIPE_SUCCESS_URL || `${process.env.SITE_URL}/dashboard`;
+    const cancelUrl = process.env.STRIPE_CANCEL_URL || `${process.env.SITE_URL}/pricing`;
+
+    try {
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: args.priceId,
+            quantity: 1,
+          },
+        ],
+        mode: args.type === 'subscription' ? 'subscription' : 'payment',
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl,
+        customer_email: user.email || undefined,
+        metadata: {
+          userId: user._id,
+          type: args.type,
+        },
+      };
+
+      if (args.type === 'subscription') {
+        sessionParams.subscription_data = {
+          metadata: {
+            userId: user._id,
+          },
+        };
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      if (!session.url) {
+        throw new Error("Failed to create checkout session URL");
+      }
+
+      return {
+        url: session.url,
+        sessionId: session.id,
+      };
+    } catch (error) {
+      console.error("Stripe checkout session error:", error);
+      throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 });
 
 export const createPortalSession = action({
   args: {},
   handler: async (ctx): Promise<{ url: string }> => {
-    const userId = await ctx.runQuery(api.auth.loggedInUser);
-    if (!userId) {
+    const user = await ctx.runQuery(api.auth.loggedInUser);
+    if (!user) {
       throw new Error("User not authenticated");
     }
 
-    const subscription: any = await ctx.runQuery(api.subscriptions.getUserSubscription);
+    const subscription = await ctx.runQuery(api.subscriptions.getUserSubscription);
     if (!subscription) {
       throw new Error("No subscription found");
     }
 
-    // This would integrate with Stripe Customer Portal in a real implementation
-    return {
-      url: `https://billing.stripe.com/p/session/mock-portal-${subscription.stripeCustomerId}`,
-    };
+    const { default: Stripe } = await import('stripe');
+    
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2024-12-18.acacia',
+    });
+
+    const returnUrl = process.env.STRIPE_PORTAL_RETURN_URL || `${process.env.SITE_URL}/dashboard`;
+
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripeCustomerId,
+        return_url: returnUrl,
+      });
+
+      return {
+        url: session.url,
+      };
+    } catch (error) {
+      console.error("Stripe portal session error:", error);
+      throw new Error(`Failed to create portal session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 });
