@@ -1,6 +1,7 @@
-import { useMutation, useAction } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useAction, useMutation } from "convex/react";
 import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
+import { Button } from "./ui/button";
 
 interface Subscription {
   _id: string;
@@ -21,7 +22,9 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   const handleCancel = async () => {
     try {
       await cancelSubscription();
-      toast.success("Subscription will be canceled at the end of the billing period");
+      toast.success(
+        "Subscription will be canceled at the end of the billing period"
+      );
     } catch (error) {
       toast.error("Failed to cancel subscription");
     }
@@ -40,7 +43,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
     return (
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-semibold mb-4">Subscription</h2>
-        <p className="text-secondary mb-4">
+        <p className="text-muted-foreground mb-4">
           You don't have an active subscription yet.
         </p>
         <p className="text-sm text-gray-500">
@@ -59,9 +62,7 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         <h2 className="text-xl font-semibold">Subscription</h2>
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isActive
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+            isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
           }`}
         >
           {subscription.status}
@@ -84,23 +85,24 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         {subscription.cancelAtPeriodEnd && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
-              Your subscription will be canceled at the end of the current billing period.
+              Your subscription will be canceled at the end of the current
+              billing period.
             </p>
           </div>
         )}
       </div>
 
       <div className="flex gap-3 mt-6">
-        <button
-          onClick={handleManageBilling}
+        <Button
+          onClick={() => void handleManageBilling()}
           className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
         >
           Manage Billing
-        </button>
-        
+        </Button>
+
         {isActive && !subscription.cancelAtPeriodEnd && (
           <button
-            onClick={handleCancel}
+            onClick={() => void handleCancel()}
             className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
           >
             Cancel

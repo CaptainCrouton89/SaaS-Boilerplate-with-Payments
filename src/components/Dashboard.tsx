@@ -17,7 +17,7 @@ export function Dashboard() {
         <h1 className="text-4xl font-bold text-primary mb-2">
           Welcome back, {user.name || user.email}!
         </h1>
-        <p className="text-secondary">
+        <p className="text-muted-foreground">
           Manage your subscription and billing
         </p>
       </div>

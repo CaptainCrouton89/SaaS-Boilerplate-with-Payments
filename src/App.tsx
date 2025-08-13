@@ -1,59 +1,102 @@
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { SignInForm } from "./SignInForm";
-import { SignOutButton } from "./SignOutButton";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useQuery } from "convex/react";
 import { Toaster } from "sonner";
-import { Dashboard } from "./components/Dashboard";
-import { PricingSection } from "./components/PricingSection";
+import { api } from "../convex/_generated/api";
+
+// Layouts
+import { MarketingLayout } from "./layouts/MarketingLayout";
+import { AuthenticatedLayout } from "./layouts/AuthenticatedLayout";
+
+// Marketing Pages
+import { LandingPage } from "./pages/LandingPage";
+import { AboutPage } from "./pages/AboutPage";
+import { ContactPage } from "./pages/ContactPage";
+import { PricingPage } from "./pages/PricingPage";
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
+
+// Authenticated Pages
+import { DashboardPage } from "./pages/DashboardPage";
+import { ProfilePage } from "./pages/ProfilePage";
+
+// Components
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export default function App() {
+  const user = useQuery(api.auth.loggedInUser);
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm h-16 flex justify-between items-center border-b shadow-sm px-4">
-        <h2 className="text-xl font-semibold text-primary">SaaS Boilerplate</h2>
-        <Authenticated>
-          <SignOutButton />
-        </Authenticated>
-      </header>
-      <main className="flex-1">
-        <Content />
-      </main>
-      <Toaster />
-    </div>
-  );
-}
+    <BrowserRouter>
+      <div className="min-h-screen">
+        <Routes>
+          {/* Marketing Routes (Unauthenticated) */}
+          <Route path="/" element={<MarketingLayout />}>
+            <Route 
+              index 
+              element={
+                user === null ? <LandingPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+            <Route 
+              path="about" 
+              element={
+                user === null ? <AboutPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+            <Route 
+              path="contact" 
+              element={
+                user === null ? <ContactPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+            <Route 
+              path="pricing" 
+              element={
+                user === null ? <PricingPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+            <Route 
+              path="login" 
+              element={
+                user === null ? <LoginPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+            <Route 
+              path="signup" 
+              element={
+                user === null ? <SignupPage /> : <Navigate to="/dashboard" replace />
+              } 
+            />
+          </Route>
 
-function Content() {
-  const loggedInUser = useQuery(api.auth.loggedInUser);
+          {/* Authenticated Routes */}
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <AuthenticatedLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
 
-  if (loggedInUser === undefined) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          {/* Fallback Route */}
+          <Route 
+            path="*" 
+            element={
+              user === null ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            } 
+          />
+        </Routes>
+        
+        <Toaster />
       </div>
-    );
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <Authenticated>
-        <Dashboard />
-      </Authenticated>
-      
-      <Unauthenticated>
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-primary mb-4">
-            Build Your SaaS
-          </h1>
-          <p className="text-xl text-secondary mb-8">
-            Complete boilerplate with subscriptions and payments
-          </p>
-          <div className="max-w-md mx-auto">
-            <SignInForm />
-          </div>
-        </div>
-        <PricingSection />
-      </Unauthenticated>
-    </div>
+    </BrowserRouter>
   );
 }

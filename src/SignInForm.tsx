@@ -1,16 +1,26 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
-export function SignInForm() {
+interface SignInFormProps {
+  defaultFlow?: "signIn" | "signUp";
+}
+
+export function SignInForm({ defaultFlow = "signIn" }: SignInFormProps) {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  const [flow, setFlow] = useState<"signIn" | "signUp">(defaultFlow);
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -20,7 +30,7 @@ export function SignInForm() {
           {flow === "signIn" ? "Welcome back" : "Create account"}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          {flow === "signIn" 
+          {flow === "signIn"
             ? "Sign in to your account to continue"
             : "Enter your details to create your account"}
         </CardDescription>
@@ -28,26 +38,26 @@ export function SignInForm() {
       <CardContent>
         <form
           className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitting(true);
-          const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", flow);
-          void signIn("password", formData).catch((error) => {
-            let toastTitle = "";
-            if (error.message.includes("Invalid password")) {
-              toastTitle = "Invalid password. Please try again.";
-            } else {
-              toastTitle =
-                flow === "signIn"
-                  ? "Could not sign in, did you mean to sign up?"
-                  : "Could not sign up, did you mean to sign in?";
-            }
-            toast.error(toastTitle);
-            setSubmitting(false);
-          });
-        }}
-      >
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSubmitting(true);
+            const formData = new FormData(e.target as HTMLFormElement);
+            formData.set("flow", flow);
+            void signIn("password", formData).catch((error) => {
+              let toastTitle = "";
+              if (error.message.includes("Invalid password")) {
+                toastTitle = "Invalid password. Please try again.";
+              } else {
+                toastTitle =
+                  flow === "signIn"
+                    ? "Could not sign in, did you mean to sign up?"
+                    : "Could not sign up, did you mean to sign in?";
+              }
+              toast.error(toastTitle);
+              setSubmitting(false);
+            });
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
               Email address
@@ -74,34 +84,44 @@ export function SignInForm() {
               className="h-10"
             />
           </div>
-          <Button type="submit" disabled={submitting} className="w-full h-10 text-sm font-medium">
-            {submitting ? "Loading..." : (flow === "signIn" ? "Sign In" : "Sign Up")}
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-10 text-sm font-medium"
+          >
+            {submitting
+              ? "Loading..."
+              : flow === "signIn"
+                ? "Sign In"
+                : "Sign Up"}
           </Button>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               {flow === "signIn"
                 ? "Don't have an account? "
                 : "Already have an account? "}
-              <button
-                type="button"
+              <Button
+                variant="link"
                 className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
                 onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
               >
                 {flow === "signIn" ? "Sign up" : "Sign in"}
-              </button>
+              </Button>
             </p>
           </div>
         </form>
-        
+
         <div className="relative my-6">
           <Separator />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2">
-            <span className="text-xs text-muted-foreground font-medium">OR</span>
+            <span className="text-xs text-muted-foreground font-medium">
+              OR
+            </span>
           </div>
         </div>
-        
-        <Button 
-          variant="outline" 
+
+        <Button
+          variant="outline"
           onClick={() => void signIn("anonymous")}
           className="w-full h-10 text-sm"
         >

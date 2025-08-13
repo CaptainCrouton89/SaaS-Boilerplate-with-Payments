@@ -1,6 +1,7 @@
-import { useQuery, useAction } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useAction, useQuery } from "convex/react";
 import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
+import { Button } from "./ui/button";
 
 export function PricingSection() {
   const subscriptionPlans = useQuery(api.products.getSubscriptionPlans);
@@ -55,7 +56,7 @@ export function PricingSection() {
             <h2 className="text-3xl font-bold text-primary mb-2">
               Choose Your Plan
             </h2>
-            <p className="text-secondary">
+            <p className="text-muted-foreground">
               Start with a plan that works for you
             </p>
           </div>
@@ -63,7 +64,7 @@ export function PricingSection() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {subscriptionPlans.map((plan) => (
               <div
-                key={plan._id}
+                key={plan.stripePriceId}
                 className={`bg-white rounded-lg shadow-sm border p-6 relative ${
                   plan.popular ? "border-primary ring-2 ring-primary/20" : ""
                 }`}
@@ -78,12 +79,14 @@ export function PricingSection() {
 
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
-                  <p className="text-secondary text-sm mb-4">{plan.description}</p>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    {plan.description}
+                  </p>
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
                       {formatPrice(plan.price, plan.currency)}
                     </span>
-                    <span className="text-secondary">/{plan.interval}</span>
+                    <span className="text-muted-foreground">/{plan.interval}</span>
                   </div>
                 </div>
 
@@ -106,16 +109,13 @@ export function PricingSection() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleSubscribe(plan.stripePriceId)}
-                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                    plan.popular
-                      ? "bg-primary text-white hover:bg-primary-hover"
-                      : "border border-primary text-primary hover:bg-primary hover:text-white"
-                  }`}
+                <Button
+                  onClick={() => void handleSubscribe(plan.stripePriceId)}
+                  variant={plan.popular ? "default" : "outline"}
+                  className="w-full"
                 >
                   Get Started
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -129,7 +129,7 @@ export function PricingSection() {
             <h2 className="text-3xl font-bold text-primary mb-2">
               One-time Purchases
             </h2>
-            <p className="text-secondary">
+            <p className="text-muted-foreground">
               Get additional features with one-time payments
             </p>
           </div>
@@ -137,12 +137,14 @@ export function PricingSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {oneTimeProducts.map((product) => (
               <div
-                key={product._id}
+                key={product.stripePriceId}
                 className="bg-white rounded-lg shadow-sm border p-6"
               >
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-                  <p className="text-secondary text-sm mb-3">{product.description}</p>
+                  <p className="text-muted-foreground text-sm mb-3">
+                    {product.description}
+                  </p>
                   <div className="text-2xl font-bold text-primary">
                     {formatPrice(product.price, product.currency)}
                   </div>
@@ -167,12 +169,12 @@ export function PricingSection() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handlePurchase(product.stripePriceId)}
-                  className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                <Button
+                  onClick={() => void handlePurchase(product.stripePriceId)}
+                  className="w-full"
                 >
                   Purchase Now
-                </button>
+                </Button>
               </div>
             ))}
           </div>

@@ -29,7 +29,7 @@ export function PaymentHistory({ payments }: PaymentHistoryProps) {
       <h2 className="text-xl font-semibold mb-4">Payment History</h2>
       
       {payments.length === 0 ? (
-        <p className="text-secondary">No payments yet.</p>
+        <p className="text-muted-foreground">No payments yet.</p>
       ) : (
         <div className="space-y-3">
           {payments.map((payment) => (
