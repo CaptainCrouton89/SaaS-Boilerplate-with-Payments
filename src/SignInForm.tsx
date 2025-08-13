@@ -4,6 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -11,9 +14,20 @@ export function SignInForm() {
   const [submitting, setSubmitting] = useState(false);
 
   return (
-    <div className="w-full">
-      <form
-        className="flex flex-col gap-form-field"
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold">
+          {flow === "signIn" ? "Welcome back" : "Create account"}
+        </CardTitle>
+        <CardDescription className="text-muted-foreground">
+          {flow === "signIn" 
+            ? "Sign in to your account to continue"
+            : "Enter your details to create your account"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
@@ -34,48 +48,66 @@ export function SignInForm() {
           });
         }}
       >
-        <Input
-          type="email"
-          name="email"
-          placeholder="Enter your email"
-          required
-        />
-        <Input
-          type="password"
-          name="password"
-          placeholder="Enter your password"
-          required
-        />
-        <Button type="submit" disabled={submitting} className="w-full">
-          {submitting ? "Loading..." : (flow === "signIn" ? "Sign In" : "Sign Up")}
-        </Button>
-        <div className="text-center text-sm text-secondary">
-          <span>
-            {flow === "signIn"
-              ? "Don't have an account? "
-              : "Already have an account? "}
-          </span>
-          <button
-            type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-          >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
-          </button>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email address
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              required
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              required
+              className="h-10"
+            />
+          </div>
+          <Button type="submit" disabled={submitting} className="w-full h-10 text-sm font-medium">
+            {submitting ? "Loading..." : (flow === "signIn" ? "Sign In" : "Sign Up")}
+          </Button>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              {flow === "signIn"
+                ? "Don't have an account? "
+                : "Already have an account? "}
+              <button
+                type="button"
+                className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
+                onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
+              >
+                {flow === "signIn" ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </div>
+        </form>
+        
+        <div className="relative my-6">
+          <Separator />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2">
+            <span className="text-xs text-muted-foreground font-medium">OR</span>
+          </div>
         </div>
-      </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
-        <hr className="my-4 grow border-gray-200" />
-      </div>
-      <Button 
-        variant="outline" 
-        onClick={() => void signIn("anonymous")}
-        className="w-full"
-      >
-        Sign in anonymously
-      </Button>
-    </div>
+        
+        <Button 
+          variant="outline" 
+          onClick={() => void signIn("anonymous")}
+          className="w-full h-10 text-sm"
+        >
+          Continue as guest
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
