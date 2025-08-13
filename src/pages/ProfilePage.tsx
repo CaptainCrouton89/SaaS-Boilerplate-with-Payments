@@ -1,5 +1,5 @@
-import { useAction, useQuery } from "convex/react";
-import { useState } from "react";
+import { useAction, useQuery, useMutation } from "convex/react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
@@ -31,6 +31,8 @@ export function ProfilePage() {
   const subscription = useQuery(api.subscriptions.getUserSubscription);
   const payments = useQuery(api.payments.getUserPayments);
   const createPortalSession = useAction(api.payments.createPortalSession);
+  const updateUserName = useMutation(api.auth.updateUserName);
+  const updatePassword = useAction(api.auth.updatePassword);
   const { handleAuthError } = useAuthErrorHandler();
 
   const currentTab = searchParams.get("tab") || "profile";
@@ -38,6 +40,22 @@ export function ProfilePage() {
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+  });
+
+  // Update profileData when user data changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+      });
+    }
+  }, [user]);
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const handleTabChange = (value: string) => {
@@ -57,7 +75,14 @@ export function ProfilePage() {
   };
 
   const handleProfileSave = async () => {
-    toast.success("Profile updated successfully!");
+    try {
+      await updateUserName({ name: profileData.name });
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to update profile");
+      }
+    }
   };
 
   const handleManageBilling = async () => {
@@ -67,6 +92,59 @@ export function ProfilePage() {
     } catch (error) {
       if (!(await handleAuthError(error))) {
         toast.error("Failed to open billing portal");
+      }
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (!/\d/.test(passwordData.newPassword)) {
+      toast.error("Password must contain at least one digit");
+      return;
+    }
+
+    if (!/[a-z]/.test(passwordData.newPassword)) {
+      toast.error("Password must contain at least one lowercase letter");
+      return;
+    }
+
+    if (!/[A-Z]/.test(passwordData.newPassword)) {
+      toast.error("Password must contain at least one uppercase letter");
+      return;
+    }
+
+    try {
+      await updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      toast.success("Password updated successfully!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      if (!(await handleAuthError(error))) {
+        toast.error("Failed to update password");
       }
     }
   };
@@ -255,22 +333,33 @@ export function ProfilePage() {
             <CardContent className="space-y-6">
               <div>
                 <h3 className="font-medium mb-3">Change Password</h3>
-                <div className="space-y-4">
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
                     <Input
                       id="current-password"
+                      name="currentPassword"
                       type="password"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
                       placeholder="Enter your current password"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
                     <Input
                       id="new-password"
+                      name="newPassword"
                       type="password"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
                       placeholder="Enter your new password"
+                      required
                     />
+                    <p className="text-xs text-gray-500">
+                      Must be at least 8 characters with uppercase, lowercase, and number
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">
@@ -278,12 +367,16 @@ export function ProfilePage() {
                     </Label>
                     <Input
                       id="confirm-password"
+                      name="confirmPassword"
                       type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
                       placeholder="Confirm your new password"
+                      required
                     />
                   </div>
-                  <Button>Update Password</Button>
-                </div>
+                  <Button type="submit">Update Password</Button>
+                </form>
               </div>
 
               <Separator />
