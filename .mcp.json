@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "static-analysis": {
+      "command": "node",
+      "args": ["/Users/silasrhyneer/Code/MCP/static-analysis/dist/index.js"]
+    },
+    "zen": {
+      "command": "/Users/silasrhyneer/Code/MCP/zen-mcp-server/.zen_venv/bin/python",
+      "args": ["/Users/silasrhyneer/Code/MCP/zen-mcp-server/server.py"]
+    },
+    "convex": {
+      "command": "npx",
+      "args": ["-y", "convex@latest", "mcp", "start"]
+    }
+  }
+}
